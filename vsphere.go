@@ -467,26 +467,26 @@ func (n ClusterDate) Less(i, j int) bool {
 
 //ClearUsersAndPasswords очистка логинов и паролей управляющих vcenter
 //
-func (inf *VMInfrastructure) ClearUsersAndPasswords() {
+func (infra *VMInfrastructure) ClearUsersAndPasswords() {
 	clearString := "********"
-	inf.VC.Lock()
-	for i := range inf.VCList {
-		inf.VCList[i].Username = clearString
-		inf.VCList[i].Password = clearString
+	infra.VC.Lock()
+	for i := range infra.VCList {
+		infra.VCList[i].Username = clearString
+		infra.VCList[i].Password = clearString
 	}
-	inf.VC.Unlock()
+	infra.VC.Unlock()
 }
 
-func (inf *VMInfrastructure) importUsersAndPasswords(from *VMInfrastructure) {
+func (infra *VMInfrastructure) importUsersAndPasswords(from *VMInfrastructure) {
 	vcList := make([]VCenter, 0)
 	from.VC.RLock()
 	for _, rec := range from.VCList {
 		vcList = append(vcList, VCenter{Hostname: rec.Hostname, Username: rec.Username, Password: rec.Password})
 	}
 	from.VC.RUnlock()
-	inf.VC.Lock()
-	inf.VCList = vcList
-	inf.VC.Unlock()
+	infra.VC.Lock()
+	infra.VCList = vcList
+	infra.VC.Unlock()
 }
 
 //SetGlobalVMInfrastructure установить значение infrastructureGlobal
@@ -548,16 +548,16 @@ func DestroyGlobalVMInfrastructureObj() {
 	}
 }
 
-//GetName получить имя управляющего кентра
+//GetName получить имя управляющего центра
 func (vcenter *VCenter) GetName() string {
 	return vcenter.Hostname
 }
 
 //getCluster получить указатель на структуру кластера по его имени
-func (inf *VMInfrastructure) getCluster(name string) (*Cluster, error) {
-	for i := range inf.CLList {
-		if name == inf.CLList[i].Name {
-			return inf.CLList[i], nil
+func (infra *VMInfrastructure) getCluster(name string) (*Cluster, error) {
+	for i := range infra.CLList {
+		if name == infra.CLList[i].Name {
+			return infra.CLList[i], nil
 		}
 	}
 	return &Cluster{}, errors.New("Cluster: " + name + " not found")
@@ -589,6 +589,8 @@ func (infra *VMInfrastructure) GetHostList() ([]HostInfo, error) {
 	return host_list, nil
 }
 
+//GetHostListFilter полцчить срез с данными хостов по фильтру
+//
 func (infra *VMInfrastructure) GetHostListFilter(vcenter, datacenter, cluster, hostname string) ([]HostInfo, error) {
 
 	if infra == nil {
@@ -626,7 +628,8 @@ func (infra *VMInfrastructure) GetHostListFilter(vcenter, datacenter, cluster, h
 
 	return host_list, nil
 }
-func (cl *Cluster) AddHostPerfomance(hi HostInfo) {
+
+func (cl *Cluster) addHostPerfomance(hi HostInfo) {
 	cl.CPUMhzAvg = cl.CPUMhzAvg + hi.CPUMhz
 	cl.AllNumCPUPkgs = cl.AllNumCPUPkgs + hi.NumCPUPkgs
 	cl.AllNumCPUCores = cl.AllNumCPUCores + hi.NumCPUCores
@@ -661,7 +664,8 @@ func (cl *Cluster) AddHostPerfomance(hi HostInfo) {
 	cl.MEMBilling = cl.MEMBilling + hi.MEMBilling
 	cl.NetBilling = cl.NetBilling + hi.NetBilling
 }
-func (cl *Cluster) CalcHostPerfomance() {
+
+func (cl *Cluster) calcHostPerfomance() {
 	count := float64(len(cl.Hosts))
 	if len(cl.Hosts) == 0 {
 		return
@@ -885,6 +889,8 @@ func (cl *Cluster) calcPerfomance() {
 	}
 }
 
+//GetClusterListFilter получить срез указателей на кластеры по фильтру
+//
 func (infra *VMInfrastructure) GetClusterListFilter(vcenter, datacenter, cluster string) ([]*Cluster, error) {
 	if infra == nil {
 		return nil, errors.New(vminfraNotInitialised)
@@ -1042,6 +1048,8 @@ func (infra *VMInfrastructure) GetClusterListFilter(vcenter, datacenter, cluster
 	return clusterList, nil
 }
 
+//GetVMList получить срез всех виртуальных машин со всех хатегистрированных vcenter
+//
 func (infra *VMInfrastructure) GetVMList() ([]VMInfo, error) {
 	if infra == nil {
 		return nil, errors.New(vminfraNotInitialised)
@@ -1066,6 +1074,8 @@ func (infra *VMInfrastructure) GetVMList() ([]VMInfo, error) {
 	return vm_list, nil
 }
 
+//GetVMListFilter получить срез всех виртуальных машин со всех хатегистрированных vcenter, с отбором по фильтру
+//
 func (infra *VMInfrastructure) GetVMListFilter(vcenter, datacenter, cluster string, vmname string) ([]VMInfo, error) {
 	if infra == nil {
 		return nil, errors.New(vminfraNotInitialised)
@@ -1104,6 +1114,8 @@ func (infra *VMInfrastructure) GetVMListFilter(vcenter, datacenter, cluster stri
 	return vm_list, nil
 }
 
+//GetVMPerfomance получить все метрики для виртуальной машины с указанным ID
+//
 func (infra *VMInfrastructure) GetVMPerfomance(id int64) *VMInfo {
 
 	if infra == nil {
@@ -1131,6 +1143,8 @@ func (infra *VMInfrastructure) GetVMPerfomance(id int64) *VMInfo {
 	return &vmp
 }
 
+//GetVMPerfomanceName получить все метрики для виртуальной машины с указанным именем
+//
 func (infra *VMInfrastructure) GetVMPerfomanceName(name string) *VMInfo {
 
 	if infra == nil {
@@ -1158,9 +1172,9 @@ func (infra *VMInfrastructure) GetVMPerfomanceName(name string) *VMInfo {
 	return &vmp
 }
 
-func (vcenter *VCenter) Connect() (*govmomi.Client, error) {
+//connect подключиться к vcenter
+func (vcenter *VCenter) connect() (*govmomi.Client, error) {
 
-	// Prepare vCenter Connections
 	if vcenter == nil {
 		return nil, errors.New("ошибка VCenter не инициализирован")
 	}
@@ -1174,7 +1188,6 @@ func (vcenter *VCenter) Connect() (*govmomi.Client, error) {
 		log.Printf("vcenter %s: ошибка разбора строки кодключения vcenter - %s\n", vcenter.Hostname, err)
 		return nil, err
 	}
-	runtime.Gosched()
 	client, err := govmomi.NewClient(ctx, u, true) //insecure false
 	if err != nil {
 		log.Printf("vcenter %s: невозможно подключиться к vcenter - %s\n", vcenter.Hostname, err)
@@ -1183,6 +1196,7 @@ func (vcenter *VCenter) Connect() (*govmomi.Client, error) {
 	return client, nil
 }
 
+//Init инициализация инфраструктуры
 func (infra *VMInfrastructure) Init() {
 	if infra == nil {
 		fmt.Println("func (infra	*VMInfrastructure)Init()", errors.New(vminfraNotInitialised))
@@ -1194,6 +1208,7 @@ func (infra *VMInfrastructure) Init() {
 	infra.DSList = make(map[string]*Datastore)
 }
 
+//Destroy уничтожение объектов инфраструктуры
 func (infra *VMInfrastructure) Destroy() {
 
 	if infra == nil {
@@ -1233,45 +1248,7 @@ func (infra *VMInfrastructure) Destroy() {
 	infra.VC.Unlock()
 }
 
-func (infra *VMInfrastructure) DestroyData() {
-
-	if infra == nil {
-		return
-	}
-
-	infrastructureGlobal.IN.Lock()
-	infrastructureGlobal.Initialized = false
-	infrastructureGlobal.IN.Unlock()
-
-	infra.VC.Lock()
-	infra.CL.Lock()
-	infra.VM.Lock()
-	infra.HS.Lock()
-
-	for key, _ := range infra.VMList {
-		//               vm.Perf = nil
-		delete(infra.VMList, key)
-	}
-
-	for key, _ := range infra.HSList {
-		//               hs.Perf = nil
-		delete(infra.HSList, key)
-	}
-
-	for i, _ := range infra.CLList {
-		infra.CLList[i].Hosts = make([]*HostInfo, 0)
-	}
-	infra.CLList = make([]*Cluster, 0)
-	infra.VMList = make(map[string]*VMInfo)
-	infra.HSList = make(map[string]*HostInfo)
-
-	runtime.GC()
-	infra.HS.Unlock()
-	infra.VM.Unlock()
-	infra.CL.Unlock()
-	infra.VC.Unlock()
-}
-
+//DestroyPerfomance очистка структур метрик
 func (infra *VMInfrastructure) DestroyPerfomance() {
 
 	if infra == nil {
@@ -1303,6 +1280,7 @@ func (infra *VMInfrastructure) DestroyPerfomance() {
 	infra.VC.Unlock()
 }
 
+//AddVCenter добавить управляющий центр в список опрашиваемых
 func (infra *VMInfrastructure) AddVCenter(hostname string, username string, password string) error {
 
 	if infra == nil {
@@ -1315,6 +1293,7 @@ func (infra *VMInfrastructure) AddVCenter(hostname string, username string, pass
 	return nil
 }
 
+//LoadVMInfo загрузить информацию по всем виртуальным машинам из управлющих центров в инфраструктуру
 func (infra *VMInfrastructure) LoadVMInfo() error {
 
 	if infra == nil {
@@ -1327,7 +1306,7 @@ func (infra *VMInfrastructure) LoadVMInfo() error {
 	Id_VM := int64(0)
 
 	for _, vc := range infra.VCList {
-		c, err := vc.Connect()
+		c, err := vc.connect()
 		if err != nil {
 			log.Printf("Ошибка подключения: %s\n", err.Error())
 			continue
@@ -1471,7 +1450,7 @@ func (infra *VMInfrastructure) LoadHostAndVMMetric() error {
 	defer setMetric() //обновляем значения метрик
 
 	for _, vc := range infra.VCList {
-		c, err := vc.Connect()
+		c, err := vc.connect()
 		if err != nil {
 			log.Printf("Ошибка подключения: ", err)
 			continue
@@ -2136,6 +2115,7 @@ func (infra *VMInfrastructure) LoadHostAndVMMetric() error {
 	return nil
 }
 
+//ListVMPerf вывод списка виртуальных машин и метрик
 func (infra *VMInfrastructure) ListVMPerf() error {
 
 	if infra == nil {
@@ -2161,8 +2141,8 @@ func (infra *VMInfrastructure) ListVMPerf() error {
 	return nil
 }
 
-//Load_DC_HS_CL_Info - функция загрузки данных по хостам и кластерам
-func (infra *VMInfrastructure) Load_DC_HS_CL_Info() error {
+//LoadDCHSCLInfo - функция загрузки данных по хостам и кластерам
+func (infra *VMInfrastructure) LoadDCHSCLInfo() error {
 
 	if infra == nil {
 		return errors.New(vminfraNotInitialised)
@@ -2174,7 +2154,7 @@ func (infra *VMInfrastructure) Load_DC_HS_CL_Info() error {
 	Id_HS := int64(0)
 
 	for _, vc := range infra.VCList {
-		c, err := vc.Connect()
+		c, err := vc.connect()
 		if err != nil {
 			log.Printf("Ошибка подключения: %s\n", err.Error())
 			continue
